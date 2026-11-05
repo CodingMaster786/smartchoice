@@ -1,13 +1,22 @@
 'use client'
 import {useEffect,useState} from 'react'
 import {supabase} from '@/lib/supabase'
+import {Eye,EyeOff,LoaderCircle,LockKeyhole,Mail,ShieldCheck} from 'lucide-react'
+import {Logo} from '@/components/Header'
 const slug=s=>s.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')
 const up=async file=>{const n=Date.now()+'-'+file.name.replace(/[^\w.]/g,'_');const{error}=await supabase.storage.from('product-images').upload(n,file);if(error)throw error;return supabase.storage.from('product-images').getPublicUrl(n).data.publicUrl}
-function Login(){const[e,setE]=useState(''),[p,setP]=useState(''),[m,setM]=useState('')
-const go=async ev=>{ev.preventDefault();const{error}=await supabase.auth.signInWithPassword({email:e,password:p});error?setM(error.message):location.reload()}
-return<form onSubmit={go} className="max-w-sm mx-auto bg-white p-6 rounded shadow space-y-3 mt-10"><h1 className="font-bold text-xl">Admin Login</h1>
-<input className="inp" type="email" placeholder="Email" value={e} onChange={x=>setE(x.target.value)} required/><input className="inp" type="password" placeholder="Password" value={p} onChange={x=>setP(x.target.value)} required/>
-<button className="btn w-full">Login</button>{m&&<p className="text-red-600 text-sm">{m}</p>}</form>}
+function Login(){const[e,setE]=useState(''),[p,setP]=useState(''),[show,setShow]=useState(false),[remember,setRemember]=useState(true),[m,setM]=useState(''),[busy,setBusy]=useState(false)
+useEffect(()=>{const saved=localStorage.getItem('smartchoice_admin_email');if(saved)setE(saved)},[])
+const go=async ev=>{ev.preventDefault();setM('');setBusy(true);if(remember)localStorage.setItem('smartchoice_admin_email',e);else localStorage.removeItem('smartchoice_admin_email');const{error}=await supabase.auth.signInWithPassword({email:e,password:p});setBusy(false);if(error)setM(error.message);else location.reload()}
+const forgot=async()=>{if(!e)return setM('Enter your email first to reset your password.');setBusy(true);const{error}=await supabase.auth.resetPasswordForEmail(e,{redirectTo:location.origin+'/admin/reset-password'});setBusy(false);setM(error?error.message:'Password reset link sent. Check your email.')}
+return <main className="min-h-[70vh] flex items-center justify-center px-4 py-10"><form onSubmit={go} className="w-full max-w-md overflow-hidden rounded-2xl border border-blue-100 bg-white shadow-xl">
+<div className="bg-gradient-to-br from-blue-700 to-blue-900 px-6 py-7 text-white"><Logo/><div className="mt-6 flex items-center gap-2 text-sm text-blue-100"><ShieldCheck size={18}/> Secure administrator access</div></div>
+<div className="space-y-5 p-6 sm:p-8"><div><h1 className="text-2xl font-bold text-blue-950">Welcome back</h1><p className="mt-1 text-sm text-slate-500">Sign in to manage SmartChoice.</p></div>
+<label className="block text-sm font-medium text-slate-700">Email<div className="relative mt-1"><Mail className="absolute left-3 top-3 text-slate-400" size={18}/><input className="inp !pl-10" type="email" placeholder="admin@example.com" value={e} onChange={x=>setE(x.target.value)} required/></div></label>
+<label className="block text-sm font-medium text-slate-700">Password<div className="relative mt-1"><LockKeyhole className="absolute left-3 top-3 text-slate-400" size={18}/><input className="inp !pl-10 !pr-10" type={show?'text':'password'} placeholder="Enter your password" value={p} onChange={x=>setP(x.target.value)} required/><button type="button" aria-label={show?'Hide password':'Show password'} onClick={()=>setShow(!show)} className="absolute right-2 top-2 rounded p-1 text-slate-500 hover:bg-slate-100">{show?<EyeOff size={18}/>:<Eye size={18}/>}</button></div></label>
+<div className="flex items-center justify-between gap-3 text-sm"><label className="flex items-center gap-2 text-slate-600"><input type="checkbox" checked={remember} onChange={x=>setRemember(x.target.checked)} className="accent-yellow-400"/>Remember email</label><button type="button" onClick={forgot} className="font-medium text-blue-700 hover:text-blue-900">Forgot password?</button></div>
+<button disabled={busy} className="flex w-full items-center justify-center gap-2 rounded-lg bg-yellow-400 px-4 py-3 font-bold text-blue-950 transition hover:bg-yellow-300 disabled:cursor-not-allowed disabled:opacity-70">{busy&&<LoaderCircle className="animate-spin" size={18}/>} {busy?'Signing in...':'Sign in'}</button>
+{m&&<p role="status" className={`rounded-lg px-3 py-2 text-sm ${m.includes('sent')?'bg-green-50 text-green-700':'bg-red-50 text-red-600'}`}>{m}</p>}</div></form></main>}
 const empty={name:'',brand:'',original_price:'',price:'',category_id:'',subcategory_id:'',affiliate_url:'',trending:false,image_url:''}
 function Products({cats,subs}){const[list,setL]=useState([]),[f,setF]=useState(empty),[file,setFile]=useState(null),[msg,setM]=useState('')
 const load=()=>supabase.from('products').select('*').order('created_at',{ascending:false}).then(({data})=>setL(data||[]));useEffect(()=>{load()},[])

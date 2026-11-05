@@ -3,7 +3,7 @@ import Link from 'next/link'
 import {useEffect,useMemo,useState} from 'react'
 import {supabase} from '@/lib/supabase'
 import {Grid,disc} from './ProductCard'
-export const loadProducts=()=>supabase.from('products').select('*,categories(name,slug,icon),subcategories(name,slug)').order('created_at',{ascending:false})
+export const loadProducts=async()=>{const[base,partner]=await Promise.all([supabase.from('products').select('*,categories(name,slug,icon),subcategories(name,slug)').order('created_at',{ascending:false}),supabase.from('partner_products').select('*,categories(name,slug,icon),subcategories(name,slug)').order('created_at',{ascending:false})]);return{data:[...(base.data||[]),...(partner.data||[])]}}
 export default function Catalog({cat,sub,q}){
 const[all,setAll]=useState(null),[subs,setSubs]=useState([]),[f,setF]=useState({max:'',brands:[],disc:0,cat:'',sort:''}),[open,setOpen]=useState(false)
 useEffect(()=>{loadProducts().then(({data})=>setAll(data||[]))

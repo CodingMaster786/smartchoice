@@ -1,4 +1,4 @@
 @tailwind base;@tailwind components;@tailwind utilities;
-body{background:#f1f5fb;color:#0f172a}
+body{background:#f1f5fb;color:#0f172a;overflow-x:hidden}
 .btn{@apply bg-yellow-400 hover:bg-yellow-300 text-blue-900 font-bold rounded px-4 py-2 inline-block text-center}
 .inp{@apply border rounded px-3 py-2 w-full bg-white}
