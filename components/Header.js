@@ -2,6 +2,7 @@
 import Link from 'next/link'
 import {useRouter} from 'next/navigation'
 import {useEffect,useRef,useState} from 'react'
+import {supabase} from '@/lib/supabase'
 import {Camera,Crown,Search,Send,ShoppingCart,UserRound} from 'lucide-react'
 const navCategories=[
 {name:'Mobiles',slug:'mobiles',image:'mobiles.jpg'},
@@ -24,7 +25,26 @@ export const Logo=()=>(<Link href="/" className="flex items-center gap-2 shrink-
 <svg width="34" height="34" viewBox="0 0 40 40"><rect width="40" height="40" rx="10" fill="#facc15"/><path d="M9 13h4l3 12h13l3-9H15" stroke="#1e3a8a" strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round"/><circle cx="18" cy="31" r="2.5" fill="#1e3a8a"/><circle cx="28" cy="31" r="2.5" fill="#1e3a8a"/></svg>
 <span className="leading-none"><b className="text-xl text-white block">Smart<span className="text-yellow-300">Choice</span></b><i className="text-[10px] text-blue-100">Choose Smart. Shop Better.</i></span></Link>)
 export default function Header(){
-const r=useRouter();const[q,setQ]=useState('');const[collapsed,setCollapsed]=useState(false);const frame=useRef(0)
+const r=useRouter();const[q,setQ]=useState('');const[collapsed,setCollapsed]=useState(false);const[uploading,setUploading]=useState(false);const[uploadMessage,setUploadMessage]=useState('');const fileInput=useRef(null);const frame=useRef(0)
+const uploadImage=async event=>{
+const file=event.target.files?.[0];event.target.value='';if(!file)return
+setUploadMessage('')
+const allowed=['image/jpeg','image/png','image/webp','image/gif']
+if(!allowed.includes(file.type))return setUploadMessage('Please choose a JPG, PNG, WEBP, or GIF image.')
+if(file.size>5*1024*1024)return setUploadMessage('Images must be 5 MB or smaller.')
+setUploading(true)
+try{
+const extension=file.name.split('.').pop()?.toLowerCase()||'jpg'
+const path=`anonymous/${crypto.randomUUID()}.${extension}`
+const{error:uploadError}=await supabase.storage.from('user-uploaded-images').upload(path,file,{contentType:file.type,upsert:false})
+if(uploadError)throw new Error(`Image upload failed: ${uploadError.message}`)
+const imageUrl=`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/authenticated/user-uploaded-images/${path}`
+const{error:recordError}=await supabase.from('user_uploaded_images').insert({storage_path:path,image_url:imageUrl,file_type:file.type,file_size_bytes:file.size})
+if(recordError){await supabase.storage.from('user-uploaded-images').remove([path]);throw new Error(`Image record failed: ${recordError.message}`)}
+setUploadMessage('Image uploaded successfully.')
+}catch(error){setUploadMessage(error.message||'Image upload failed.')}
+finally{setUploading(false)}
+}
 useEffect(()=>{const onScroll=()=>{if(frame.current)return;frame.current=requestAnimationFrame(()=>{setCollapsed(window.scrollY>32);frame.current=0})};window.addEventListener('scroll',onScroll,{passive:true});return()=>{window.removeEventListener('scroll',onScroll);if(frame.current)cancelAnimationFrame(frame.current)}},[])
 return(<header className="shadow">
 <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-3 py-1">
@@ -55,7 +75,9 @@ return(<header className="shadow">
 <Search className="my-auto text-gray-400 shrink-0" size={20}/><input value={q} onChange={e=>setQ(e.target.value)} placeholder="tv shoes" className="min-w-0 flex-1 px-3 outline-none text-gray-800"/>
 <button type="submit" className="rounded-full bg-yellow-400 px-4 py-2 font-semibold text-blue-900 hover:bg-yellow-300">Search</button>
 </form>
-<button type="button" aria-label="Visual search" className="rounded-full bg-white p-2 text-gray-600 shadow-sm hover:bg-gray-100"><Camera size={20}/></button>
+<button type="button" aria-label="Upload an image" title="Upload an image" disabled={uploading} onClick={()=>fileInput.current?.click()} className="rounded-full bg-white p-2 text-gray-600 shadow-sm hover:bg-gray-100 disabled:opacity-60"><Camera size={20}/></button>
+<input ref={fileInput} type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" onChange={uploadImage}/>
+{uploadMessage&&<span role="status" className="absolute right-0 top-full z-40 mt-1 max-w-[260px] rounded bg-white px-3 py-2 text-xs text-slate-700 shadow">{uploadMessage}</span>}
 </div>
 <nav className="mt-1 bg-transparent overflow-x-auto [&::-webkit-scrollbar]:hidden" style={{scrollbarWidth:'none'}}><div className="max-w-7xl mx-auto px-3 flex gap-3 py-0.5" style={{scrollbarWidth:'none'}}>
 {navCategories.map(c=><Link key={c.slug} href={'/c/'+c.slug} className="group shrink-0 w-20 text-center text-xs text-white">

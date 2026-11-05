@@ -2,3 +2,53 @@
 body{background:#f1f5fb;color:#0f172a;overflow-x:hidden}
 .btn{@apply bg-yellow-400 hover:bg-yellow-300 text-blue-900 font-bold rounded px-4 py-2 inline-block text-center}
 .inp{@apply border rounded px-3 py-2 w-full bg-white}
+
+/* Admin-only white minimal theme. */
+body:has(input[placeholder="admin@example.com"]),
+body:has(a[href="/admin/partner-listings"]){background:#fff;color:#172b4d}
+body:has(input[placeholder="admin@example.com"]) .bg-white,
+body:has(a[href="/admin/partner-listings"]) .bg-white{background:#fff!important;border:1px solid #e8edf3;box-shadow:0 6px 20px rgba(30,55,90,.08)}
+body:has(input[placeholder="admin@example.com"]) .bg-white:hover,
+body:has(a[href="/admin/partner-listings"]) .bg-white:hover{box-shadow:0 9px 26px rgba(30,55,90,.11)}
+body:has(input[placeholder="admin@example.com"]) .inp,
+body:has(a[href="/admin/partner-listings"]) .inp{background:#fff!important;border:1px solid #dce5ef!important;border-radius:.75rem!important;color:#172b4d;box-shadow:0 1px 3px rgba(30,55,90,.04)}
+body:has(input[placeholder="admin@example.com"]) .inp:focus,
+body:has(a[href="/admin/partner-listings"]) .inp:focus{outline:2px solid rgba(37,99,235,.18);outline-offset:1px;border-color:#8fb4e8!important;box-shadow:0 2px 7px rgba(30,80,150,.1)}
+body:has(input[placeholder="admin@example.com"]) .btn,
+body:has(a[href="/admin/partner-listings"]) .btn{background:#2563b8!important;color:#fff!important;border-radius:.7rem!important;box-shadow:0 4px 10px rgba(37,99,184,.2)}
+body:has(input[placeholder="admin@example.com"]) .btn:hover,
+body:has(a[href="/admin/partner-listings"]) .btn:hover{background:#1d4f96!important;box-shadow:0 6px 14px rgba(37,99,184,.25)}
+body:has(input[placeholder="admin@example.com"]) button.bg-yellow-400,
+body:has(a[href="/admin/partner-listings"]) button.bg-yellow-400,
+body:has(input[placeholder="admin@example.com"]) button.bg-blue-700,
+body:has(a[href="/admin/partner-listings"]) button.bg-blue-700{color:#fff!important;border-radius:.7rem;box-shadow:0 4px 10px rgba(37,99,184,.16)}
+body:has(input[placeholder="admin@example.com"]) .text-blue-950,
+body:has(input[placeholder="admin@example.com"]) .text-blue-900,
+body:has(a[href="/admin/partner-listings"]) .text-blue-950,
+body:has(a[href="/admin/partner-listings"]) .text-blue-900{color:#174a86!important}
+body:has(input[placeholder="admin@example.com"]) .text-slate-500,
+body:has(input[placeholder="admin@example.com"]) .text-slate-600,
+body:has(a[href="/admin/partner-listings"]) .text-slate-500,
+body:has(a[href="/admin/partner-listings"]) .text-slate-600{color:#64748b!important}
+
+/* Partner login/dashboard use the same white minimal visual language. */
+body:has(input[placeholder="you@example.com"]),
+body:has(textarea[placeholder="Description"]){background:#fff;color:#172b4d}
+body:has(input[placeholder="you@example.com"]) .bg-white,
+body:has(textarea[placeholder="Description"]) .bg-white{background:#fff!important;border-color:#e8edf3;box-shadow:0 6px 20px rgba(30,55,90,.08)}
+body:has(input[placeholder="you@example.com"]) .bg-white:hover,
+body:has(textarea[placeholder="Description"]) .bg-white:hover{box-shadow:0 9px 26px rgba(30,55,90,.11)}
+body:has(input[placeholder="you@example.com"]) .inp,
+body:has(textarea[placeholder="Description"]) .inp{background:#fff!important;border:1px solid #dce5ef!important;border-radius:.75rem!important;color:#172b4d;box-shadow:0 1px 3px rgba(30,55,90,.04)}
+body:has(input[placeholder="you@example.com"]) .inp:focus,
+body:has(textarea[placeholder="Description"]) .inp:focus{outline:2px solid rgba(37,99,235,.18);outline-offset:1px;border-color:#8fb4e8!important;box-shadow:0 2px 7px rgba(30,80,150,.1)}
+body:has(input[placeholder="you@example.com"]) .btn,
+body:has(textarea[placeholder="Description"]) .btn{background:#2563b8!important;color:#fff!important;border-radius:.7rem!important;box-shadow:0 4px 10px rgba(37,99,184,.2)}
+body:has(input[placeholder="you@example.com"]) .btn:hover,
+body:has(textarea[placeholder="Description"]) .btn:hover{background:#1d4f96!important;box-shadow:0 6px 14px rgba(37,99,184,.25)}
+body:has(input[placeholder="you@example.com"]) .text-blue-950,
+body:has(textarea[placeholder="Description"]) .text-blue-950{color:#174a86!important}
+body:has(input[placeholder="you@example.com"]) .text-slate-500,
+body:has(input[placeholder="you@example.com"]) .text-slate-600,
+body:has(textarea[placeholder="Description"]) .text-slate-500,
+body:has(textarea[placeholder="Description"]) .text-slate-600{color:#64748b!important}

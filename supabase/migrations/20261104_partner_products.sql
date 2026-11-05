@@ -264,10 +264,9 @@ begin
   elsif old.partner_id is distinct from auth.uid()
      or new.partner_id is distinct from old.partner_id then
     raise exception 'Partners can only modify their own products';
-  elsif new.status is distinct from old.status
-     or new.rejection_reason is distinct from old.rejection_reason
-     or new.approved_product_id is distinct from old.approved_product_id then
-    raise exception 'Legacy approval fields can only be changed by an admin';
+  elsif new.approved_product_id is distinct from old.approved_product_id
+     and new.approved_product_id is not null then
+    raise exception 'Partners cannot set approved_product_id';
   end if;
 
   new.updated_at := now();
@@ -415,7 +414,7 @@ create policy "partner product image upload"
   with check (
     bucket_id = 'partner-product-images'
     and (storage.foldername(name))[1] = auth.uid()::text
-    and array_length(storage.foldername(name), 1) >= 2
+    and array_length(storage.foldername(name), 1) >= 3
   );
 
 create policy "partner product image update"

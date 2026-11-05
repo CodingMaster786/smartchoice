@@ -8,9 +8,26 @@ const url=id=>typeof window==='undefined'?'':`${location.origin}/product/${id}`
 
 export default function PartnerDashboard(){
   const[user,setUser]=useState(null),[list,setList]=useState([]),[cats,setCats]=useState([]),[subs,setSubs]=useState([]),[form,setForm]=useState(empty),[file,setFile]=useState(null),[editing,setEditing]=useState(false),[busy,setBusy]=useState(true),[message,setMessage]=useState('')
-  const load=async()=>{const{data,error}=await supabase.from('partner_products').select('*,categories(name),subcategories(name)').order('created_at',{ascending:false});if(error)setMessage(error.message);else setList(data||[])}
-  useEffect(()=>{supabase.auth.getUser().then(async({data,error})=>{if(error||!data.user){location.href='/partner';return}const{data:admin}=await supabase.from('admin_users').select('email').eq('email',data.user.email).maybeSingle();if(admin){await supabase.auth.signOut();location.href='/partner';return}setUser(data.user);const[c,s]=await Promise.all([supabase.from('categories').select('*').order('sort'),supabase.from('subcategories').select('*')]);setCats(c.data||[]);setSubs(s.data||[]);await load();setBusy(false)})},[])
-  const save=async e=>{e.preventDefault();setMessage('');setBusy(true);try{const row={...form,partner_id:user.id,original_price:+form.original_price,price:+form.price,category_id:form.category_id||null,subcategory_id:form.subcategory_id||null};if(file){const name=`${user.id}/${Date.now()}-${file.name.replace(/[^\w.]/g,'_')}`;const upload=await supabase.storage.from('partner-product-images').upload(name,file);if(upload.error)throw upload.error;row.image_url=supabase.storage.from('partner-product-images').getPublicUrl(name).data.publicUrl}delete row.id;delete row.created_at;delete row.updated_at;delete row.status;delete row.rejection_reason;delete row.approved_product_id;const result=editing?await supabase.from('partner_products').update(row).eq('id',form.id):await supabase.from('partner_products').insert(row);if(result.error)throw result.error;setForm(empty);setFile(null);setEditing(false);setMessage(editing?'Product updated.':'Product published.');await load()}catch(e){setMessage(e.message)}setBusy(false)}
+  const load=async ownerId=>{const{data,error}=await supabase.from('partner_products').select('*,categories(name),subcategories(name)').eq('partner_id',ownerId).order('created_at',{ascending:false});if(error)setMessage(error.message);else setList(data||[])}
+  useEffect(()=>{supabase.auth.getUser().then(async({data,error})=>{if(error||!data.user){location.href='/partner';return}const{data:admin}=await supabase.from('admin_users').select('email').eq('email',data.user.email).maybeSingle();if(admin){await supabase.auth.signOut();location.href='/partner';return}setUser(data.user);const[c,s]=await Promise.all([supabase.from('categories').select('*').order('sort'),supabase.from('subcategories').select('*')]);setCats(c.data||[]);setSubs(s.data||[]);await load(data.user.id);setBusy(false)})},[])
+  const save=async e=>{e.preventDefault();setMessage('');setBusy(true);try{
+    const{data:{user:activeUser},error:authError}=await supabase.auth.getUser()
+    if(authError||!activeUser)throw new Error('Your partner session has expired. Please sign in again.')
+    const partnerId=activeUser.id
+    const row={name:form.name,brand:form.brand||null,description:form.description||null,original_price:+form.original_price,price:+form.price,category_id:form.category_id||null,subcategory_id:form.subcategory_id||null,affiliate_url:form.affiliate_url,image_url:form.image_url||null,partner_id:partnerId}
+    if(!editing){row.status='approved';row.rejection_reason=null;row.approved_product_id=null}
+    if(file){
+      const name=`${partnerId}/products/${Date.now()}-${file.name.replace(/[^\w.]/g,'_')}`
+      const upload=await supabase.storage.from('partner-product-images').upload(name,file,{upsert:false})
+      if(upload.error)throw new Error(`Image upload failed: ${upload.error.message}`)
+      const publicUrl=supabase.storage.from('partner-product-images').getPublicUrl(name).data.publicUrl
+      if(!publicUrl)throw new Error('Image upload succeeded but no public image URL was returned.')
+      row.image_url=publicUrl
+    }
+    const result=editing?await supabase.from('partner_products').update(row).eq('id',form.id).eq('partner_id',partnerId):await supabase.from('partner_products').insert(row)
+    if(result.error)throw new Error(`Product save failed: ${result.error.message}`)
+    setForm(empty);setFile(null);setEditing(false);setMessage(editing?'Product updated.':'Product published.');await load(partnerId)
+  }catch(e){setMessage(e.message)}setBusy(false)}
   const edit=p=>{setForm({...empty,...p});setEditing(true);scrollTo({top:0,behavior:'smooth'})}
   const share=async(p,channel)=>{const link=url(p.id),text=`${p.name} - ₹${p.price}`;if(channel==='copy')await navigator.clipboard.writeText(link);else if(channel==='native'&&navigator.share)await navigator.share({title:p.name,text,url:link});else if(channel==='whatsapp')window.open(`https://wa.me/?text=${encodeURIComponent(text+' '+link)}`,'_blank');else if(channel==='telegram')window.open(`https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent(text)}`,'_blank');else if(channel==='facebook')window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(link)}`,'_blank');const{error}=await supabase.from('partner_product_shares').insert({product_id:p.id,partner_user_id:user.id,channel});if(error)setMessage(error.message);else setMessage(channel==='copy'?'Product link copied.':'Share opened.')}
   if(busy&&!user)return <div className="flex min-h-[50vh] items-center justify-center text-blue-700"><LoaderCircle className="animate-spin" size={28}/></div>
