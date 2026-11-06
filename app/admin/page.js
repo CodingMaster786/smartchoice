@@ -4,6 +4,7 @@ import {useEffect,useState} from 'react'
 import {supabase} from '@/lib/supabase'
 import {Eye,EyeOff,LoaderCircle,LockKeyhole,Mail,ShieldCheck} from 'lucide-react'
 import {Logo} from '@/components/Header'
+import BulkProductUpload from '@/components/BulkProductUpload'
 const slug=s=>s.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')
 const up=async file=>{const n=Date.now()+'-'+file.name.replace(/[^\w.]/g,'_');const{error}=await supabase.storage.from('product-images').upload(n,file);if(error)throw error;return supabase.storage.from('product-images').getPublicUrl(n).data.publicUrl}
 function Login(){const[e,setE]=useState(''),[p,setP]=useState(''),[show,setShow]=useState(false),[remember,setRemember]=useState(true),[m,setM]=useState(''),[busy,setBusy]=useState(false)
@@ -27,17 +28,17 @@ if(file)row.image_url=await up(file);delete row.created_at
 const{error}=f.id?await supabase.from('products').update(row).eq('id',f.id):await supabase.from('products').insert(row);if(error)throw error
 setF(empty);setFile(null);setM('Saved ✔');load()}catch(x){setM(x.message)}}
 const del=async id=>{if(confirm('Delete this product?')){await supabase.from('products').delete().eq('id',id);load()}}
-return<div className="grid lg:grid-cols-2 gap-4"><form onSubmit={save} className="bg-white p-4 rounded space-y-2"><h2 className="font-bold">{f.id?'Edit':'Add'} product</h2>
+return<div><BulkProductUpload cats={cats} onImported={load}/><div className="grid lg:grid-cols-2 gap-4"><form onSubmit={save} className="bg-white p-4 rounded space-y-2"><h2 className="font-bold">{f.id?'Edit':'Add'} product</h2>
 <input className="inp" placeholder="Product name" value={f.name} onChange={e=>set({name:e.target.value})} required/><input className="inp" placeholder="Brand" value={f.brand||''} onChange={e=>set({brand:e.target.value})}/>
 <div className="flex gap-2"><input className="inp" type="number" placeholder="Original price" value={f.original_price} onChange={e=>set({original_price:e.target.value})} required/><input className="inp" type="number" placeholder="Discounted price" value={f.price} onChange={e=>set({price:e.target.value})} required/></div>
 <select className="inp" value={f.category_id||''} onChange={e=>set({category_id:e.target.value,subcategory_id:''})} required><option value="">Category</option>{cats.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select>
 <select className="inp" value={f.subcategory_id||''} onChange={e=>set({subcategory_id:e.target.value})}><option value="">Subcategory</option>{subs.filter(s=>s.category_id===f.category_id).map(s=><option key={s.id} value={s.id}>{s.name}</option>)}</select>
 <input className="inp" type="url" placeholder="Your Flipkart affiliate link (https://...)" value={f.affiliate_url||''} onChange={e=>set({affiliate_url:e.target.value})}/>
-<input type="file" accept="image/*" onChange={e=>setFile(e.target.files[0])}/>{f.image_url&&!file&&<img src={f.image_url} className="h-16"/>}
+<input type="file" accept="image/*" onChange={e=>setFile(e.target.files[0])}/>{(file||f.image_url)&&<div className="flex min-h-72 w-full items-center justify-center rounded-lg bg-slate-100 p-4"><img src={file?URL.createObjectURL(file):f.image_url} className="max-h-64 max-w-full object-contain" alt="Product preview"/></div>}
 <label className="block text-sm"><input type="checkbox" checked={!!f.trending} onChange={e=>set({trending:e.target.checked})}/> Show in Trending</label>
 <button className="btn">{f.id?'Update':'Add'}</button>{f.id&&<button type="button" className="ml-2 underline" onClick={()=>setF(empty)}>Cancel</button>}<p className="text-sm">{msg}</p></form>
-<div className="bg-white p-4 rounded space-y-2 max-h-[80vh] overflow-auto"><h2 className="font-bold">{list.length} products</h2>{list.map(p=><div key={p.id} className="flex justify-between gap-2 border-b py-1 text-sm"><span>{p.name} — ₹{p.price}{!p.affiliate_url&&<em className="text-red-500"> (no affiliate link)</em>}</span>
-<span className="shrink-0"><button className="text-blue-700" onClick={()=>{setF({...empty,...p});scrollTo(0,0)}}>Edit</button> <button className="text-red-600" onClick={()=>del(p.id)}>Delete</button></span></div>)}</div></div>}
+<div className="bg-white p-4 rounded space-y-2 max-h-[80vh] overflow-auto"><h2 className="font-bold">{list.length} products</h2>{list.map(p=><div key={p.id} className="flex justify-between gap-2 border-b py-1 text-sm"><span>{p.name} — ₹{p.price} <em className={p.image_url?'text-green-600':'text-amber-600'}>({p.image_url?'Published':'Pending Image'})</em>{!p.affiliate_url&&<em className="text-red-500"> (no affiliate link)</em>}</span>
+<span className="shrink-0"><button className="text-blue-700" onClick={()=>{setF({...empty,...p});scrollTo(0,0)}}>Edit Product</button> <button className="text-red-600" onClick={()=>del(p.id)}>Delete</button></span></div>)}</div></div></div>}
 function Cats({cats,subs,reload}){const[n,setN]=useState(''),[ic,setIc]=useState('🛍️'),[sn,setSn]=useState(''),[sc,setSc]=useState('')
 const add=async(t,row,r)=>{const{error}=await supabase.from(t).insert(row);error?alert(error.message):r()}
 const del=async(t,id)=>{if(confirm('Delete? Subcategories/products may be affected.')){await supabase.from(t).delete().eq('id',id);reload()}}

@@ -1,9 +1,27 @@
+import {memo} from 'react'
 export const disc=p=>p.original_price>p.price?Math.round(100-p.price*100/p.original_price):0
 export const inr=n=>'₹'+Number(n).toLocaleString('en-IN')
-export default function ProductCard({p}){
+function ProductCard({p}){
 // Uses the product's own affiliate link; falls back to a plain Flipkart search until one is added.
 const url=p.affiliate_url||'https://www.flipkart.com/search?q='+encodeURIComponent(p.name)
-const shareUrl=()=>{const productUrl=typeof window==='undefined'?`/product/${p.id}`:`${window.location.origin}/product/${p.id}`;const text=`${p.name} - ${inr(p.price)} ${productUrl}`;window.open(`https://wa.me/?text=${encodeURIComponent(text)}`,'_blank','noopener,noreferrer')}
+const shareUrl=async()=>{
+ const productUrl=`${window.location.origin}/product/${p.id}`,discount=disc(p),text=`${p.name}\nPrice: ${inr(p.price)}\nDiscount: ${discount}%\nProduct page: ${productUrl}\nBuy now: ${url}`
+ const imageUrl=p.image_url,canUseImage=typeof imageUrl==='string'&&/^https:\/\//i.test(imageUrl)
+ try{
+  if(navigator.share){
+   if(canUseImage){
+    const response=await fetch(imageUrl,{mode:'cors'})
+    if(response.ok){
+     const blob=await response.blob(),extension=blob.type.split('/')[1]||'jpeg',file=new File([blob],`smartchoice-${p.id}.${extension}`,{type:blob.type||'image/jpeg'})
+     if(navigator.canShare?.({files:[file]})){await navigator.share({title:p.name,text,files:[file]});return}
+    }
+   }
+   await navigator.share({title:p.name,text,url});return
+  }
+ }catch(error){if(error?.name==='AbortError')return}
+ const fallback=canUseImage?`${text}\nProduct image: ${imageUrl}`:text
+ window.open(`https://wa.me/?text=${encodeURIComponent(fallback)}`,'_blank','noopener,noreferrer')
+}
 return(<div className="bg-white rounded-lg shadow-sm hover:shadow-md transition p-2 sm:p-3 flex flex-col min-w-0">
 <div className="relative h-52 w-full bg-slate-100 rounded p-2 flex items-center justify-center overflow-hidden">
 {p.image_url?<img src={p.image_url} alt={p.name} loading="lazy" className="block !w-full !h-full max-w-none max-h-none object-contain"/>:<span className="text-5xl">{p.categories?.icon||'🛍️'}</span>}
@@ -17,4 +35,5 @@ return(<div className="bg-white rounded-lg shadow-sm hover:shadow-md transition 
 <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.5 3.5A11.8 11.8 0 0 0 12.1 0C5.6 0 .3 5.3.3 11.8c0 2.1.5 4.1 1.6 5.9L.2 24l6.5-1.7a11.8 11.8 0 0 0 5.4 1.3h.1c6.5 0 11.8-5.3 11.8-11.8 0-3.2-1.3-6.1-3.5-8.3Zm-8.4 18.1h-.1a9.8 9.8 0 0 1-5-1.4l-.4-.2-3.8 1 1-3.7-.2-.4a9.8 9.8 0 1 1 8.5 4.7Zm5.4-7.3c-.3-.2-1.7-.8-2-.9-.3-.1-.5-.2-.7.2-.2.3-.8.9-.9 1.1-.2.2-.3.2-.6.1-1.7-.8-2.8-1.5-3.9-3.4-.3-.5.3-.5.8-1.6.1-.2.1-.4 0-.6-.1-.2-.7-1.6-.9-2.2-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.6.1-.9.4-.3.3-1.2 1.2-1.2 2.9s1.2 3.4 1.4 3.6c.2.2 2.4 3.7 5.8 5.2 2.2 1 2.2.7 2.6.7.4 0 1.7-.7 1.9-1.3.2-.6.2-1.2.1-1.3-.1-.2-.3-.2-.6-.4Z"/></svg>
 </button>
 </div></div>)}
+export default memo(ProductCard)
 export const Grid=({list})=>list.length?<div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-3">{list.map(p=><ProductCard key={p.id} p={p}/>)}</div>:<p className="text-slate-500 p-8 text-center bg-white rounded">No products found.</p>

@@ -1,6 +1,6 @@
 'use client'
 import Link from 'next/link'
-import {useEffect,useState} from 'react'
+import {useEffect,useMemo,useState} from 'react'
 import {supabase} from '@/lib/supabase'
 import {loadProducts} from '@/components/Catalog'
 import {Grid,disc} from '@/components/ProductCard'
@@ -19,13 +19,13 @@ const[cats,setC]=useState([]),[ban,setB]=useState([]),[prods,setP]=useState([]),
 useEffect(()=>{supabase.from('categories').select('*').order('sort').then(({data})=>setC(data||[]))
 supabase.from('banners').select('*').eq('active',true).order('sort').then(({data})=>setB(data||[]));loadProducts().then(({data})=>setP(data||[]))},[])
 useEffect(()=>{if(ban.length<2)return;const t=setInterval(()=>setI(x=>(x+1)%ban.length),4000);return()=>clearInterval(t)},[ban])
-const b=ban[i],brands=[...new Set(prods.map(p=>p.brand).filter(Boolean))]
+const b=ban[i],brands=useMemo(()=>[...new Set(prods.map(p=>p.brand).filter(Boolean))],[prods]),bestDeals=useMemo(()=>[...prods].sort((a,b)=>disc(b)-disc(a)).slice(0,10),[prods])
 return(<div>
 {b&&<Link href={b.link||'/'} className="block mt-2 rounded-xl bg-yellow-400 text-blue-900 p-3 sm:p-6 relative overflow-hidden min-h-[88px] sm:min-h-[110px]" style={b.image_url?{background:`url(${b.image_url}) center/cover`}:{}}>
 <div className={b.image_url?'bg-white/80 inline-block p-2 sm:p-3 rounded':''}><b className="text-xl sm:text-2xl block">{b.title}</b><span className="text-sm sm:text-base">{b.subtitle}</span></div>
 <span className="absolute bottom-2 right-3 text-xs">{ban.map((_,k)=><span key={k}>{k===i?'●':'○'} </span>)}</span></Link>}
 <S t="🔥 Trending Products"><Grid list={prods.filter(p=>p.trending).slice(0,10)}/></S>
-<S t="💰 Best Deals"><Grid list={[...prods].sort((a,b)=>disc(b)-disc(a)).slice(0,10)}/></S>
+<S t="💰 Best Deals"><Grid list={bestDeals}/></S>
 <S t="⚡ Today's Offers (40% off or more)"><Grid list={prods.filter(p=>disc(p)>=40).slice(0,10)}/></S>
 <S t="Popular Brands"><div className="flex flex-wrap gap-2">{brands.map(x=><Link key={x} href={'/search?q='+encodeURIComponent(x)} className="bg-white border rounded-full px-4 py-2 text-sm font-medium hover:bg-yellow-100">{x}</Link>)}</div></S>
 </div>)}
